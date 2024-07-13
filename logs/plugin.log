@@ -1,0 +1,6 @@
+[2024-07-01T01:47:19.494899+00:00] pd_logger.WARNING: This is a warning message. [] []
+[2024-07-01T01:47:19.496083+00:00] pd_logger.ERROR: This is an error message. [] []
+[2024-07-01T01:47:19.641058+00:00] pd_logger.WARNING: This is a warning message. [] []
+[2024-07-01T01:47:19.641152+00:00] pd_logger.ERROR: This is an error message. [] []
+[2024-07-01T01:47:20.184968+00:00] pd_logger.WARNING: This is a warning message. [] []
+[2024-07-01T01:47:20.185265+00:00] pd_logger.ERROR: This is an error message. [] []

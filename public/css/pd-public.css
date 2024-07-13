@@ -1,0 +1,22 @@
+/**
+ * All of the CSS for your public-facing functionality should be
+ * included in this file.
+ */
+
+ .pd-auto-location-detector {
+    margin-bottom: 20px;
+    margin-right: 20px;
+ }
+
+ .pd-manual-location-detector-wrapper {
+    display: none;
+ }
+
+ .pd-manual-location-detector-wrapper input {
+    width: 100%;
+ }
+
+ .pd-manual-location-detector-wrapper small {
+    font-size: 12px;
+    opacity: 0.5;
+ }
