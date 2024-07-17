@@ -15,6 +15,7 @@
 
     $(document).ready(function () {
         pd_load_maps_data(jQuery);
+        $('#billing_address_1').prop('disabled', true);
     });
 })(jQuery);
 
@@ -236,7 +237,15 @@ function pd_calculate_distance_and_time(lat, long) {
             jQuery,
             response.rows[0].elements[0].duration.value
         );
+
+        pd_populate_address(response.destinationAddresses[0], lat, long);
     }
+}
+
+function pd_populate_address(address, lat, lng) {
+    jQuery('#billing_address_1').val(address);
+    jQuery('#billing_address_1').prop('disabled', true);
+    jQuery('#pd-customer-destination-lat-lng').val('Lat: ' + lat + ' Lng: ' + lng);
 }
 
 function pd_update_shipping_cost($, time) {

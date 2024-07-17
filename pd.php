@@ -24,6 +24,8 @@
  * Domain Path:       /languages
  */
 
+use Automattic\WooCommerce\Admin\Overrides\Order;
+
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -136,8 +138,6 @@ add_action(
 	}
 );
 
-add_filter( 'woocommerce_billing_fields', 'custom_remove_billing_address_fields' );
-
 /**
  * Undocumented function
  *
@@ -146,15 +146,17 @@ add_filter( 'woocommerce_billing_fields', 'custom_remove_billing_address_fields'
  */
 function custom_remove_billing_address_fields( $fields ) {
 
-	unset( $fields['billing_address_1'] );
 	unset( $fields['billing_address_2'] );
 	unset( $fields['billing_city'] );
 	unset( $fields['billing_postcode'] );
 	unset( $fields['billing_country'] );
 	unset( $fields['billing_state'] );
+	$fields['billing_address_1']['required'] = false;
 
 	return $fields;
 }
+
+add_filter( 'woocommerce_billing_fields', 'custom_remove_billing_address_fields' );
 
 // Remove the "Ship to a different address?" checkbox.
 add_filter( 'woocommerce_cart_needs_shipping_address', '__return_false' );
@@ -199,3 +201,175 @@ function pd_load_maps_data() {
 
 add_action( 'wp_ajax_pd_load_maps_data', 'pd_load_maps_data' );
 add_action( 'wp_ajax_nopriv_pd_load_maps_data', 'pd_load_maps_data' );
+
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
+function meta_box_initializer() {
+	$current_screen = get_current_screen()->id;
+
+	if ( 'shop_order' !== $current_screen && 'woocommerce_page_wc-orders' !== $current_screen ) {
+		return;
+	}
+
+	add_meta_box(
+		'order_delivery_status',
+		'Order Delivery Status',
+		'order_delivery_status__callback',
+		$current_screen,
+		'side',
+		'core'
+	);
+}
+
+/**
+ * Undocumented function
+ *
+ * @param object $post The post object.
+ * @return void
+ */
+function order_delivery_status__callback( $post ) {
+	$current_delivery_status = get_post_meta( $post->get_id(), 'pd_order_delivery_status', true );
+
+	wp_nonce_field( 'save_order_delivery_status', 'pd_delivery_status_nonce' );
+
+	echo '<label>Select a status<label>';
+	echo '<select name="pd_delivery_status">';
+	echo '<option value="">Select</option>';
+	echo '<option value="1" ' . selected( $current_delivery_status, '1', false ) . ' >Your Order Has Been Received</option>';
+	echo '<option value="2" ' . selected( $current_delivery_status, '2', false ) . ' >We are making the order now</option>';
+	echo '<option value="3" ' . selected( $current_delivery_status, '3', false ) . ' >Your Order Is Ready</option>';
+	echo '<option value="4" ' . selected( $current_delivery_status, '4', false ) . ' >We finna dispatch the driver</option>';
+	echo '<option value="5" ' . selected( $current_delivery_status, '5', false ) . ' >The driver is on the way!</option>';
+	echo '<option value="6" ' . selected( $current_delivery_status, '6', false ) . ' >Well.. Ok Denn 🫡</option>';
+	echo '</select>';
+
+	echo '<div class="wrapper"><h2 style="padding: 0px; margin-top: 20px">Delivery Destination</h2>';
+	echo '<p>' . esc_html( get_post_meta( $post->get_id(), 'customer_lat_lng', true ) ) . '</p>';
+	echo '</div>';
+}
+
+add_action( 'add_meta_boxes', 'meta_box_initializer' );
+
+/**
+ * Undocumented function
+ *
+ * @param int    $order_id The order id.
+ * @param object $order The order object.
+ * @return void
+ */
+function save_order_delivery_status( $order_id, $order ) {
+	if ( ! isset( $_POST['pd_delivery_status_nonce'] ) || ! wp_verify_nonce( $_POST['pd_delivery_status_nonce'], 'save_order_delivery_status' ) ) { // phpcs:ignore
+		return;
+	}
+
+	if ( ! isset( $_POST['pd_delivery_status'] ) ) {
+		return;
+	}
+
+	$selected_delivery_status = sanitize_text_field( wp_unslash( $_POST['pd_delivery_status'] ) );
+
+	update_post_meta( $order_id, 'pd_order_delivery_status', $selected_delivery_status );
+}
+
+add_action( 'woocommerce_process_shop_order_meta', 'save_order_delivery_status', 10, 2 );
+
+
+add_action(
+	'init',
+	function () {
+		add_shortcode( 'order_delivery_step', 'order_delivery_step_shortcode' );
+	}
+);
+
+/**
+ * Shortcode callback function.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string HTML output.
+ */
+function order_delivery_step_shortcode( $atts ) {
+	$order_id = isset( $_GET['order-id'] ) ? sanitize_text_field( wp_unslash( $_GET['order-id'] ) ) : '0'; // phpcs:ignore
+
+	if ( '0' === $order_id ) {
+		return 0;
+	}
+
+	$atts = shortcode_atts(
+		array(
+			'current_step' => 1,
+		),
+		$atts,
+		'order_delivery_step'
+	);
+
+	$current_delivery_status = intval( $atts['current_step'] );
+
+	$active_delivery_status = get_post_meta( $order_id, 'pd_order_delivery_status', true );
+
+	$str = '<div class="pd-delivery-status-num" style="' . pd_get_color( $active_delivery_status, $current_delivery_status ) . '">' . $current_delivery_status . '</div>';
+
+	return $str;
+}
+
+/**
+ * Get color based on delivery status comparison.
+ *
+ * @param int $active_delivery_status Active delivery status.
+ * @param int $current_delivery_status Current delivery status.
+ * @return string Background color.
+ */
+function pd_get_color( $active_delivery_status, $current_delivery_status ) {
+	if ( $current_delivery_status < $active_delivery_status ) {
+		return 'background-color: #ffffff; color: #000000';
+	}
+
+	if ( $current_delivery_status == $active_delivery_status ) {
+		return 'background-color: #dd2928;';
+	}
+
+	if ( $current_delivery_status > $active_delivery_status ) {
+		return 'background-color: #000000; color: #ffffff';
+	}
+}
+
+add_action( 'woocommerce_thankyou', 'custom_order_confirmation_action', 10, 1 );
+
+function custom_order_confirmation_action( $order_id ) {
+	if ( ! $order_id ) {
+		return;
+	}
+
+	$order_tracker_page = add_query_arg(
+		array(
+			'order-id' => $order_id,
+		),
+		home_url( '/order-tracker' )
+	);
+
+	wp_safe_redirect( $order_tracker_page );
+}
+
+function custom_checkout_field_before_order_notes( $checkout ) {
+
+	woocommerce_form_field(
+		'pd-customer-destination-lat-lng',
+		array(
+			'type'  => 'hidden',
+			'class' => array( 'form-row-wide pd-customer-destination-lat-lng' ),
+		),
+		$checkout->get_value( 'custom_field' )
+	);
+}
+
+add_action( 'woocommerce_before_order_notes', 'custom_checkout_field_before_order_notes' );
+
+function save_pd_customer_destination_lat_lng( $order_id ) {
+	$customer_destination_lat_lng = $_POST['pd-customer-destination-lat-lng'];
+
+	update_post_meta( $order_id, 'customer_lat_lng', $customer_destination_lat_lng );
+}
+
+add_action( 'woocommerce_checkout_update_order_meta', 'save_pd_customer_destination_lat_lng' );
