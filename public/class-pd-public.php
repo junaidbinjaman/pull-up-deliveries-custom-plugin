@@ -100,30 +100,33 @@ class Pd_Public {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-		wp_enqueue_script(
-			'google-maps-api',
-			"https://maps.googleapis.com/maps/api/js?key={$google_map_api}&callback=initMap&libraries=places",
-			array(),
-			null,
-			true // Load in footer.
-		);
 
-		wp_enqueue_script(
-			$this->plugin_name,
-			plugin_dir_url( __FILE__ ) . 'js/pd-public.js',
-			array( 'jquery', 'google-maps-api' ),
-			$this->version,
-			true
-		);
+		if ( is_checkout() ) {
+			wp_enqueue_script(
+				'google-maps-api',
+				"https://maps.googleapis.com/maps/api/js?key={$google_map_api}&callback=initMap&libraries=places",
+				array(),
+				null,
+				true // Load in footer.
+			);
 
-		wp_localize_script(
-			$this->plugin_name,
-			'ajax_object',
-			array(
-				'url'   => admin_url( 'admin-ajax.php' ),
-				'nonce' => wp_create_nonce( 'update_shipping_cost' ),
-			)
-		);
+			wp_enqueue_script(
+				$this->plugin_name,
+				plugin_dir_url( __FILE__ ) . 'js/pd-public.js',
+				array( 'jquery', 'google-maps-api' ),
+				$this->version,
+				true
+			);
+
+			wp_localize_script(
+				$this->plugin_name,
+				'ajax_object',
+				array(
+					'url'   => admin_url( 'admin-ajax.php' ),
+					'nonce' => wp_create_nonce( 'update_shipping_cost' ),
+				)
+			);
+		}
 	}
 
 	/**
