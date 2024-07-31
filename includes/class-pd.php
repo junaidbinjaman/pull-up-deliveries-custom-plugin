@@ -152,6 +152,12 @@ class Pd {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'wp_ajax_update_shipping_cost', $plugin_admin, 'update_shipping_cost' );
+		$this->loader->add_action( 'wp_ajax_nopriv_update_shipping_cost', $plugin_admin, 'update_shipping_cost' );
+		$this->loader->add_action( 'wp_ajax_pd_load_maps_data', $plugin_admin, 'pd_load_maps_data' );
+		$this->loader->add_action( 'wp_ajax_nopriv_pd_load_maps_data', $plugin_admin, 'pd_load_maps_data' );
+		$this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'meta_box_initializer' );
+		$this->loader->add_action( 'woocommerce_process_shop_order_meta', $plugin_admin, 'save_order_delivery_status', 10, 2 );
 	}
 
 	/**
@@ -168,6 +174,13 @@ class Pd {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_filter( 'script_loader_tag', $plugin_public, 'add_defer_attribute_to_google_maps_script', 10, 2 );
+		$this->loader->add_filter( 'woocommerce_package_rates', $plugin_public, 'change_rates', 10, 2 );
+		$this->loader->add_action( 'woocommerce_checkout_update_order_review', $plugin_public, 'reset_session_key' );
+		$this->loader->add_filter( 'woocommerce_billing_fields', $plugin_public, 'remove_billing_address_fields' );
+		$this->loader->add_action( 'init', $plugin_public, 'shortcode_initializer' );
+		$this->loader->add_action( 'woocommerce_thankyou', $plugin_public, 'custom_order_confirmation_action' );
+		$this->loader->add_action( 'woocommerce_before_order_notes', $plugin_public, 'custom_checkout_field_before_order_notes' );
+		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $plugin_public, 'save_pd_customer_destination_lat_lng' );
 	}
 
 	/**

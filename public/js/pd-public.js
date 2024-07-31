@@ -42,7 +42,7 @@ function pd_load_maps_data($) {
             );
             localStorage.setItem('customerMarkerMsg', response.data[1].msg);
 
-            pd_handle_location_input_visibility($);
+            pd_handle_location_input_visibility($, response.data[0].country_code);
 
             pd_visual_map(
                 Number(response.data[0].lat),
@@ -58,10 +58,10 @@ function pd_load_maps_data($) {
     });
 }
 
-function pd_handle_location_input_visibility($) {
+function pd_handle_location_input_visibility($, country_code) {
     $('.pd-manual-location-detector').on('click', function () {
         $('.pd-manual-location-detector-wrapper').show();
-        pd_address_auto_complete();
+        pd_address_auto_complete(country_code);
     });
 
     $('.pd-auto-location-detector').on('click', function () {
@@ -135,7 +135,7 @@ function handleLocationError(browserHasGeolocation, infoWindow, pos) {
 window.initMap = initMap;
 
 // Search auto complete
-function pd_address_auto_complete() {
+function pd_address_auto_complete(country_code) {
     let storeLat = Number(localStorage.getItem('storLat'));
     let storeLng = Number(localStorage.getItem('storLng'));
 
@@ -151,7 +151,7 @@ function pd_address_auto_complete() {
     const input = document.getElementById('pac-input');
     const options = {
         bounds: defaultBounds,
-        componentRestrictions: {country: 'bd'},
+        componentRestrictions: {country: country_code},
         fields: ['address_components', 'geometry', 'icon', 'name', 'place_id'], // Note: 'place_id' instead of 'placeId'
         strictBounds: false,
     };
@@ -249,8 +249,34 @@ function pd_populate_address(address, lat, lng) {
 }
 
 function pd_update_shipping_cost($, time) {
-    let min = time / 60;
-    let cost = 0.5 * min;
+    time = time / 60;
+    let cost;
+
+    console.log(time)
+
+    if ( time <= 10 ) {
+        cost = 5;
+    }
+
+    if ( time <= 20 && time > 10) {
+        cost = 10;
+    }
+
+    if ( time <= 30 && time > 20) {
+        cost = 20;
+    }
+
+    if ( time <= 40 && time > 30) {
+        cost = 30;
+    }
+
+    if ( time <= 50 && time > 40) {
+        cost = 40;
+    }
+
+    if ( time > 50 ) {
+        cost = 50;
+    }
 
     $.ajax({
         url: ajax_object.url,

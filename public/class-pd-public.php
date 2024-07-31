@@ -140,4 +140,175 @@ class Pd_Public {
 
 		return $tag;
 	}
+
+	/**
+	 * Update the local delivery cost
+	 *
+	 * The function retrieve the delivery cost from woocommerce session
+	 * and update the delivery cost.
+	 *
+	 * @param array $rates The shipping rates.
+	 * @param array $package The products.
+	 * @return array
+	 */
+	public function change_rates( $rates, $package ) {
+
+		$cost = WC()->session->get( 'custom_shipping_cost' );
+
+		foreach ( $rates as $rate_key => $rate ) {
+			if ( 'flat_rate' === $rate->method_id ) {
+				$rate->label              = 'Local Delivery';
+				$rates[ $rate_key ]->cost = $cost;
+			}
+		}
+
+		return $rates;
+	}
+
+	/**
+	 * The function reset the session key
+	 *
+	 * @param object $posted_detail Unknown.
+	 * @return void
+	 */
+	public function reset_session_key( $posted_detail ) {
+		global $woocommerce;
+		$packages = $woocommerce->cart->get_shipping_packages();
+
+		foreach ( $packages as $package_key => $package ) {
+			$session_key = 'shipping_for_package_' . $package_key;
+			WC()->session->set( $session_key, null ); // Unset the session key.
+		}
+
+		// Trigger shipping rate recalculation.
+		$woocommerce->cart->calculate_totals();
+	}
+
+	/**
+	 * Remove billing address fields
+	 *
+	 * @param array $fields The billing fields.
+	 * @return array
+	 */
+	public function remove_billing_address_fields( $fields ) {
+
+		unset( $fields['billing_address_2'] );
+		unset( $fields['billing_city'] );
+		unset( $fields['billing_postcode'] );
+		unset( $fields['billing_country'] );
+		unset( $fields['billing_state'] );
+		$fields['billing_address_1']['required'] = false;
+
+		return $fields;
+	}
+
+	/**
+	 * Shortcode initializer.
+	 *
+	 * @return void
+	 */
+	public function shortcode_initializer() {
+		add_shortcode( 'order_delivery_step', array( $this, 'order_delivery_step_shortcode' ) );
+	}
+
+	/**
+	 * Shortcode callback function.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string HTML output.
+	 */
+	public function order_delivery_step_shortcode( $atts ) {
+		$order_id = isset( $_GET['order-id'] ) ? sanitize_text_field( wp_unslash( $_GET['order-id'] ) ) : '0'; // phpcs:ignore
+
+		if ( '0' === $order_id ) {
+			return 0;
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'current_step' => 1,
+			),
+			$atts,
+			'order_delivery_step'
+		);
+
+		$current_delivery_status = intval( $atts['current_step'] );
+
+		$active_delivery_status = get_post_meta( $order_id, 'pd_order_delivery_status', true );
+
+		$str = '<div class="pd-delivery-status-num" style="' . $this->pd_get_color( $active_delivery_status, $current_delivery_status ) . '">' . $current_delivery_status . '</div>';
+
+		return $str;
+	}
+
+	/**
+	 * Get color based on delivery status comparison.
+	 *
+	 * @param int $active_delivery_status Active delivery status.
+	 * @param int $current_delivery_status Current delivery status.
+	 * @return string Background color.
+	 */
+	public function pd_get_color( $active_delivery_status, $current_delivery_status ) {
+		if ( $current_delivery_status < $active_delivery_status ) {
+			return 'background-color: #ffffff; color: #000000';
+		}
+
+		if ( $current_delivery_status == $active_delivery_status ) {
+			return 'background-color: #dd2928;';
+		}
+
+		if ( $current_delivery_status > $active_delivery_status ) {
+			return 'background-color: #000000; color: #ffffff';
+		}
+	}
+
+	/**
+	 * Redirect users to the order tracking page after placing the order
+	 *
+	 * @param int $order_id The order id.
+	 * @return void
+	 */
+	public function custom_order_confirmation_action( $order_id ) {
+		if ( ! $order_id ) {
+			return;
+		}
+
+		$order_tracker_page = add_query_arg(
+			array(
+				'order-id' => $order_id,
+			),
+			home_url( '/order-tracker' )
+		);
+
+		wp_safe_redirect( $order_tracker_page );
+	}
+
+	/**
+	 * A hidden input field to store location let lang
+	 *
+	 * @param object $checkout The checkout fields.
+	 * @return void
+	 */
+	public function custom_checkout_field_before_order_notes( $checkout ) {
+
+		woocommerce_form_field(
+			'pd-customer-destination-lat-lng',
+			array(
+				'type'  => 'hidden',
+				'class' => array( 'form-row-wide pd-customer-destination-lat-lng' ),
+			),
+			$checkout->get_value( 'custom_field' )
+		);
+	}
+
+	/**
+	 * Save customer destination's lat lng.
+	 *
+	 * @param int $order_id The order id.
+	 * @return void
+	 */
+	public function save_pd_customer_destination_lat_lng( $order_id ) {
+		$customer_destination_lat_lng = $_POST['pd-customer-destination-lat-lng']; // phpcs:ignore
+		update_post_meta( $order_id, 'customer_lat_lng', $customer_destination_lat_lng );
+	}
 }
