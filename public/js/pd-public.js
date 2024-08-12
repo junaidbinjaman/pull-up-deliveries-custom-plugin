@@ -244,7 +244,7 @@ function pd_calculate_distance_and_time(lat, long) {
 
 function pd_populate_address(address, lat, lng) {
     jQuery('#billing_address_1').val(address);
-    jQuery('#billing_address_1').prop('disabled', true);
+    jQuery('#billing_address_1').prop('disabled', false);
     jQuery('#pd-customer-destination-lat-lng').val('Lat: ' + lat + ' Lng: ' + lng);
 }
 

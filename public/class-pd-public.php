@@ -312,6 +312,11 @@ class Pd_Public {
 	 */
 	public function save_pd_customer_destination_lat_lng( $order_id ) {
 		$customer_destination_lat_lng = $_POST['pd-customer-destination-lat-lng']; // phpcs:ignore
-		update_post_meta( $order_id, 'customer_lat_lng', $customer_destination_lat_lng );
+		$customer_delivery_address    = $_POST['billing_address_1']; // phpcs:ignore
+
+		if ( ! empty( $customer_destination_lat_lng ) ) {
+			update_post_meta( $order_id, 'customer_lat_lng', $customer_destination_lat_lng );
+			update_post_meta( $order_id, 'pd_customer_delivery_address', $customer_delivery_address );
+		}
 	}
 }

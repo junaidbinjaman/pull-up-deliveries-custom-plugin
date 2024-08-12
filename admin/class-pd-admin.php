@@ -182,7 +182,8 @@ class Pd_Admin {
 	 * @return void
 	 */
 	public function order_delivery_status__callback( $post ) {
-		$current_delivery_status = get_post_meta( $post->get_id(), 'pd_order_delivery_status', true );
+		$current_delivery_status   = get_post_meta( $post->get_id(), 'pd_order_delivery_status', true );
+		$customer_delivery_address = get_post_meta( $post->get_id(), 'pd_customer_delivery_address', true );
 
 		wp_nonce_field( 'save_order_delivery_status', 'pd_delivery_status_nonce' );
 
@@ -198,6 +199,7 @@ class Pd_Admin {
 		echo '</select>';
 
 		echo '<div class="wrapper"><h2 style="padding: 0px; margin-top: 20px">Delivery Destination</h2>';
+		echo '<p>Delivery Address: ' . esc_html( $customer_delivery_address ) . '</p>';
 		echo '<p>' . esc_html( get_post_meta( $post->get_id(), 'customer_lat_lng', true ) ) . '</p>';
 		echo '</div>';
 	}

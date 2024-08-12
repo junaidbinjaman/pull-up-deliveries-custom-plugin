@@ -82,3 +82,13 @@ run_pd();
 
 // Remove the "Ship to a different address?" checkbox.
 add_filter( 'woocommerce_cart_needs_shipping_address', '__return_false' );
+
+// phpcs:disabled
+
+add_filter(
+	'woocommerce_checkout_fields',
+	function ( $fields ) {
+		$fields['billing']['billing_address_1']['required'] = true;
+		return $fields;
+	}
+);
